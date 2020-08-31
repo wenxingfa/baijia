@@ -1,0 +1,39 @@
+SELECT   a.id, a.wpfl, a.gg, a.rksl, a.rkje, a.rq, a.slsl, a.slje, a.sgsl, a.sgje, a.qcsl, a.qcje, b.kcsl, b.kcje, c.pdsl
+FROM      (SELECT   e.id, e.wpfl, e.gg, SUM(d.rksl) AS rksl, SUM(d.rkje) AS rkje, f.id AS rq, SUM(a.slsl) AS slsl, SUM(a.slje) AS slje, 
+                                 SUM(b.sgsl) AS sgsl, SUM(b.sgje) AS sgje, SUM(c.qcsl) AS qcsl, SUM(c.qcje) AS qcje
+                 FROM      (SELECT   c.wpzl, LEFT(b.ckrq, 7) AS ckrq, SUM(b.sl) AS slsl, SUM(b.je) AS slje
+                                  FROM      dbo.uf_wpsld AS a INNER JOIN
+                                                  dbo.uf_wpsld_dt2 AS b ON a.id = b.mainid INNER JOIN
+                                                  dbo.uf_wpzlkc AS c ON b.wpzl = c.id
+                                  WHERE   (a.ywlx = 0) AND (a.requestId IS NOT NULL)
+                                  GROUP BY c.wpzl, LEFT(b.ckrq, 7), c.mc) AS a FULL OUTER JOIN
+                                     (SELECT   c.wpzl, LEFT(b.ckrq, 7) AS ckrq, SUM(b.sl) AS sgsl, SUM(b.je) AS sgje
+                                      FROM      dbo.uf_wpsld AS a INNER JOIN
+                                                      dbo.uf_wpsld_dt2 AS b ON a.id = b.mainid INNER JOIN
+                                                      dbo.uf_wpzlkc AS c ON b.wpzl = c.id
+                                      WHERE   (a.ywlx = 1) AND (a.requestId IS NOT NULL)
+                                      GROUP BY c.wpzl, LEFT(b.ckrq, 7), c.mc) AS b ON LEFT(a.ckrq, 7) = LEFT(b.ckrq, 7) AND 
+                                 a.wpzl = b.wpzl FULL OUTER JOIN
+                                     (SELECT   b.wpzl, LEFT(c.ksrq, 7) AS qj, SUM(b.sl) AS qcsl, SUM(b.je) AS qcje
+                                      FROM      dbo.uf_qcsj AS a INNER JOIN
+                                                      dbo.uf_qcsj_dt1 AS b ON a.id = b.mainid INNER JOIN
+                                                      dbo.uf_qj AS c ON a.dqqj = c.id
+                                      GROUP BY b.wpzl, LEFT(c.ksrq, 7)) AS c ON b.wpzl = c.wpzl AND LEFT(b.ckrq, 7) = LEFT(c.qj, 7) 
+                                 FULL OUTER JOIN
+                                     (SELECT   b.wpzl, LEFT(a.rkrq, 7) AS rkrq, SUM(b.sl) AS rksl, SUM(b.je) AS rkje
+                                      FROM      dbo.uf_rkd AS a INNER JOIN
+                                                      dbo.uf_rkd_dt1 AS b ON a.id = b.mainid
+                                      GROUP BY b.wpzl, LEFT(a.rkrq, 7)) AS d ON c.wpzl = d.wpzl AND LEFT(c.qj, 7) = LEFT(d.rkrq, 7) INNER JOIN
+                                 dbo.uf_wpzl AS e ON e.id = a.wpzl OR e.id = b.wpzl OR e.id = c.wpzl OR e.id = d.wpzl INNER JOIN
+                                 dbo.uf_qj AS f ON LEFT(a.ckrq, 7) = LEFT(f.ksrq, 7) OR
+                                 LEFT(b.ckrq, 7) = LEFT(f.ksrq, 7) OR
+                                 LEFT(f.ksrq, 7) = LEFT(c.qj, 7) OR
+                                 LEFT(d.rkrq, 7) = LEFT(f.ksrq, 7)
+                 GROUP BY e.id, e.gg, e.wpfl, f.id) AS a INNER JOIN
+                    (SELECT   wpzl, SUM(sl) AS kcsl, SUM(je) AS kcje
+                     FROM      dbo.uf_wpzlkc
+                     GROUP BY wpzl) AS b ON a.id = b.wpzl
+					 INNER JOIN (select a.sl AS pdsl,c.wpzl AS wpzl FROM dbo.uf_wppdb_dt1 AS a 
+					 INNER JOIN dbo.uf_wpsld_dt2 AS b ON a.wpzl = b.wpzl 
+					 INNER JOIN dbo.uf_wpzlkc AS c ON c.id = b.wpzl
+					 GROUP BY c.wpzl, a.sl) AS c ON b.wpzl = c.wpzl
